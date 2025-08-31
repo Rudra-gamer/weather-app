@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #74ebd5, #acb6e5);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+    button {
+      cursor: pointer;
+      background: #007BFF;
+      color: white;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      max-width: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    #weatherCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌤 Weather App</h1>
+  <input type="text" id="city" placeholder="Enter city/village name">
+  <button id="getWeather">Get Weather</button>
+  <button id="getLocation">📍 Use My Location</button>
+  <div id="result"></div>
+
+  <script>
+    const API_KEY = "eb11337bfca7017e9fa36f5eee4318d8"; // ✅ your real API key
+    let animationId;
+
+    document.getElementById("getWeather").addEventListener("click", () => {
+      const city = document.getElementById("city").value.trim();
+      if (!city) {
+        alert("Please enter a city or village name");
+        return;
+      }
+      getCoordinates(city);
+    });
+
+    document.getElementById("getLocation").addEventListener("click", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            getWeather(lat, lon, "Your Location", "", "");
+          },
+          () => {
+            alert("Location access denied. Please allow location access.");
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    });
+
+    async function getCoordinates(city) {
+      try {
+        document.getElementById("result").innerHTML = `<p>⏳ Fetching location...</p>`;
+        const response = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`
+        );
+        const data = await response.json();
+
+        if (data.length === 0) {
+          document.getElementById("result").innerHTML = `<p>❌ Location not found!</p>`;
+          return;
+        }
+
+        const { lat, lon, name, country, state } = data[0];
+        getWeather(lat, lon, name, country, state);
+      } catch (error) {
+        console.error("Error fetching coordinates:", error);
+        document.getElementById("result").innerHTML = `<p>⚠️ Something went wrong!</p>`;
+      }
+    }
+
+    async function getWeather(lat, lon, name, country, state) {
+      try {
+        document.getElementById("result").innerHTML = `<p>⏳ Fetching weather data...</p>`;
+
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+        );
+        const data = await response.json();
+
+        if (data.cod !== 200) {
+          let message = data.message;
+          if (data.cod === 401) {
+            message = "Invalid API key. Please check and try again.";
+          }
+          document.getElementById("result").innerHTML = `<p>❌ Error: ${message}</p>`;
+          return;
+        }
+
+        // ✅ Show weather card
+        document.getElementById("result").innerHTML = `
+          <h2>${name}${state ? ", " + state : ""} ${country ? ", " + country : ""}</h2>
+          <p>🌡 Temperature: ${data.main.temp}°C</p>
+          <p>🌥 Weather: ${data.weather[0].description}</p>
+          <p>💧 Humidity: ${data.main.humidity}%</p>
+          <p>💨 Wind Speed: ${data.wind.speed} m/s</p>
+          <canvas id="weatherCanvas"></canvas>
+        `;
+
+        startWeatherEffect(data.weather[0].main.toLowerCase());
+      } catch (error) {
+        console.error("Error fetching weather data:", error);
+        document.getElementById("result").innerHTML = `<p>⚠️ Something went wrong!</p>`;
+      }
+    }
+
+    function startWeatherEffect(weatherType) {
+      const canvas = document.getElementById("weatherCanvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      cancelAnimationFrame(animationId); // stop old animation
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (weatherType.includes("rain")) drawRain(ctx, canvas);
+      else if (weatherType.includes("snow")) drawSnow(ctx, canvas);
+      else if (weatherType.includes("thunder")) drawThunder(ctx, canvas);
+    }
+
+    function drawRain(ctx, canvas) {
+      const drops = Array.from({ length: 80 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        length: Math.random() * 20 + 10,
+        speed: Math.random() * 4 + 4,
+      }));
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "rgba(0,0,255,0.6)";
+        ctx.lineWidth = 2;
+        drops.forEach(d => {
+          ctx.beginPath();
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(d.x, d.y + d.length);
+          ctx.stroke();
+          d.y += d.speed;
+          if (d.y > canvas.height) {
+            d.y = -d.length;
+            d.x = Math.random() * canvas.width;
+          }
+        });
+        animationId = requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    function drawSnow(ctx, canvas) {
+      const flakes = Array.from({ length: 60 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 3 + 2,
+        speed: Math.random() * 1 + 0.5,
+      }));
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        flakes.forEach(f => {
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+          ctx.fill();
+          f.y += f.speed;
+          if (f.y > canvas.height) {
+            f.y = -f.radius;
+            f.x = Math.random() * canvas.width;
+          }
+        });
+        animationId = requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    function drawThunder(ctx, canvas) {
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (Math.random() > 0.97) { // random flashes
+          ctx.fillStyle = "rgba(255,255,255,0.8)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        animationId = requestAnimationFrame(animate);
+      }
+      animate();
+    }
+  </script>
+</body>
+</html>
