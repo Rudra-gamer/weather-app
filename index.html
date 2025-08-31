@@ -238,7 +238,7 @@
                         dailyData[dt] = { temp: item.main.temp, desc: item.weather[0].description, icon: item.weather[0].icon };
                     }
                 });
-                let dailyHTML = "<h3>📅 7-Day Forecast</h3><div class='forecast'>";
+                let dailyHTML = "<h3>📅 5-Day Forecast</h3><div class='forecast'>";
                 Object.entries(dailyData).forEach(([dt, info]) => {
                     dailyHTML += `<div><p><b>${dt}</b></p><img src="https://openweathermap.org/img/wn/${info.icon}.png" alt="${info.desc}"><p>🌡 ${info.temp}°C</p><p>${info.desc}</p></div>`;
                 });
@@ -288,3 +288,4 @@
 </body>
 
 </html>
+
