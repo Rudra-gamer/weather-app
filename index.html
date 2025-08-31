@@ -2,326 +2,289 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weather App</title>
-  <style>
-    :root {
-      --bg: linear-gradient(to right, #6dd5ed, #2193b0);
-      --text: white;
-      --card: rgba(0, 0, 0, 0.4);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        :root {
+            --bg: linear-gradient(to right, #6dd5ed, #2193b0);
+            --text: white;
+            --card: rgba(0, 0, 0, 0.4);
+        }
 
-    body.dark {
-      --bg: linear-gradient(to right, #141e30, #243b55);
-      --text: #f5f5f5;
-      --card: rgba(255, 255, 255, 0.1);
-    }
+        body.dark {
+            --bg: linear-gradient(to right, #141e30, #243b55);
+            --text: #f5f5f5;
+            --card: rgba(255, 255, 255, 0.1);
+        }
 
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      transition: all 0.5s ease;
-      overflow: hidden;
-      overflow-y: auto;
-    }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
 
-    h1 {
-      margin-bottom: 20px;
-    }
+        h1 {
+            margin-bottom: 20px;
+        }
 
-    .controls {
-      margin-bottom: 15px;
-    }
+        .controls {
+            margin-bottom: 15px;
+        }
 
-    input,
-    button {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      min-height: 44px;
-      font-size: 18px;
-    }
+        input,
+        button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            min-height: 44px;
+            font-size: 16px;
+        }
 
-    button {
-      cursor: pointer;
-      background: #ff9800;
-      color: white;
-      font-weight: bold;
-      transition: transform 0.2s;
-    }
+        button {
+            cursor: pointer;
+            background: #ff9800;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
 
-    button:hover {
-      transform: scale(1.05);
-    }
+        button:hover {
+            transform: scale(1.05);
+        }
 
-    #result {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 15px;
-      background: var(--card);
-      display: inline-block;
-      min-width: 320px;
-      position: relative;
-      overflow: hidden;
-    }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            background: var(--card);
+            display: inline-block;
+            min-width: 320px;
+            position: relative;
+            overflow: hidden;
+        }
 
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
 
-    .forecast {
-      display: flex;
-      overflow-x: auto;
-      gap: 10px;
-      margin-top: 15px;
-      padding-bottom: 10px;
-      scrollbar-width: thin;
-    }
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid #d4d4d4;
+            background-color: #fff;
+            z-index: 99;
+            max-height: 200px;
+            overflow-y: auto;
+        }
 
-    .forecast::-webkit-scrollbar {
-      height: 6px;
-    }
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #0a0000;
+            border-bottom: 1px solid #d4d4d4;
+        }
 
-    .forecast::-webkit-scrollbar-thumb {
-      background-color: rgba(255, 255, 255, 0.5);
-      border-radius: 3px;
-    }
+        .autocomplete-items div:hover {
+            background-color: #e9e9e9;
+        }
 
-    .forecast div {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      padding: 10px;
-      min-width: 120px;
-      flex: 0 0 auto;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      transition: transform 0.2s;
-      position: relative;
-    }
+        .forecast {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
 
-    .forecast div:hover {
-      transform: scale(1.05);
-    }
+        .forecast div {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            min-width: 100px;
+            flex: 0 0 auto;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+            position: relative;
+        }
 
-    .forecast canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
+        .forecast div:hover {
+            transform: scale(1.05);
+        }
 
-    .forecast img {
-      width: 50px;
-      height: 50px;
-    }
-
-    #canvasWrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    #weatherCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-    }
-  </style>
+        .forecast img {
+            width: 50px;
+            height: 50px;
+        }
+    </style>
 </head>
 
 <body>
-  <h1>🌤 Weather App</h1>
+    <h1>🌤 Weather App</h1>
+    <div class="controls">
+        <input type="text" id="city" placeholder="Enter city or village">
+        <button id="getWeather">Get Weather</button>
+        <button id="getLocation">📍 Use My Location</button>
+        <button id="toggleTheme">🌙 Dark Mode</button>
+        <div id="autocomplete-list" class="autocomplete-items"></div>
+    </div>
+    <div id="result">
+        <canvas id="weatherCanvas"></canvas>
+    </div>
 
-  <div class="controls">
-    <input type="text" id="city" placeholder="Enter city or village">
-    <button id="getWeather">Get Weather</button>
-    <button id="getLocation">📍 Use My Location</button>
-    <button id="toggleTheme">🌙 Dark Mode</button>
-  </div>
+    <script>
+        const API_KEY = "eb11337bfca7017e9fa36f5eee4318d8";
+        let animationId;
 
-  <div id="result">
-    <canvas id="weatherCanvas"></canvas>
-  </div>
-
-
-
-  <script>
-    const API_KEY = "eb11337bfca7017e9fa36f5eee4318d8";
-    let animationId;
-    const isMobile = window.innerWidth < 768;
-    const maxRainParticles = isMobile ? 30 : 80;
-    const maxSnowParticles = isMobile ? 20 : 60;
-
-    document.getElementById("getWeather").addEventListener("click", () => {
-      const city = document.getElementById("city").value.trim();
-      if (!city) { alert("Please enter a city or village name"); return; }
-      getCoordinates(city);
-    });
-
-    document.getElementById("getLocation").addEventListener("click", () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => getWeather(pos.coords.latitude, pos.coords.longitude, "Your Location", "", ""),
-          () => alert("Location access denied. Please allow location access.")
-        );
-      } else { alert("Geolocation not supported."); }
-    });
-
-    document.getElementById("toggleTheme").addEventListener("click", () => {
-      document.body.classList.toggle("dark");
-      document.getElementById("toggleTheme").textContent =
-        document.body.classList.contains("dark") ? "☀️ Light Mode" : "🌙 Dark Mode";
-    });
-
-    window.addEventListener("resize", () => {
-      const mainCanvas = document.getElementById("weatherCanvas");
-      if (mainCanvas) { mainCanvas.width = mainCanvas.offsetWidth; mainCanvas.height = mainCanvas.offsetHeight; }
-      document.querySelectorAll(".cardCanvas").forEach(c => { c.width = c.offsetWidth; c.height = c.offsetHeight; });
-    });
-
-    async function getCoordinates(city) {
-      try {
-        document.getElementById("result").innerHTML = `<p>⏳ Fetching location...</p><canvas id="weatherCanvas"></canvas>`;
-        const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
-        const data = await res.json();
-        if (!data.length) { document.getElementById("result").innerHTML = `<p>❌ Location not found!</p>`; return; }
-        const { lat, lon, name, country, state } = data[0];
-        getWeather(lat, lon, name, country, state);
-      } catch (err) { console.error(err); document.getElementById("result").innerHTML = `<p>⚠️ Something went wrong!</p>`; }
-    }
-
-    async function getWeather(lat, lon, name, country, state) {
-      try {
-        document.getElementById("result").innerHTML = `<p>⏳ Fetching weather...</p><canvas id="weatherCanvas"></canvas>`;
-        const curRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
-        const curData = await curRes.json();
-        const foreRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
-        const foreData = await foreRes.json();
-        if (curData.cod !== 200) { document.getElementById("result").innerHTML = `<p>❌ Error: ${curData.message}</p>`; return; }
-
-        let dailyForecast = {};
-        foreData.list.forEach(item => {
-          if (item.dt_txt.includes("12:00:00")) {
-            const date = new Date(item.dt_txt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-            dailyForecast[date] = { temp: item.main.temp, desc: item.weather[0].description, icon: item.weather[0].icon };
-          }
-        });
-
-        let forecastHTML = "<h3>📅 5-Day Forecast</h3><div class='forecast'>";
-        Object.entries(dailyForecast).forEach(([date, info]) => {
-          forecastHTML += `
-            <div>
-              <p><b>${date}</b></p>
-              <canvas class="cardCanvas" width="80" height="80"></canvas>
-              <img src="https://openweathermap.org/img/wn/${info.icon}@2x.png" alt="${info.desc}" loading="lazy">
-              <p>🌡 ${info.temp}°C</p>
-              <p>${info.desc}</p>
-            </div>`;
-        });
-        forecastHTML += "</div>";
-
-        const curIcon = `https://openweathermap.org/img/wn/${curData.weather[0].icon}@2x.png`;
-        document.getElementById("result").innerHTML = `
-          <h2>${name}${state ? ", " + state : ""}${country ? ", " + country : ""}</h2>
-          <img src="${curIcon}" alt="${curData.weather[0].description}">
-          <p>🌡 Temperature: ${curData.main.temp}°C</p>
-          <p>🌥 Weather: ${curData.weather[0].description}</p>
-          <p>💧 Humidity: ${curData.main.humidity}%</p>
-          <p>💨 Wind Speed: ${curData.wind.speed} m/s</p>
-          ${forecastHTML}
-          <canvas id="weatherCanvas"></canvas>
-        `;
-
-        setWeatherBackground(curData.weather[0].main.toLowerCase());
-        startWeatherEffect(curData.weather[0].main.toLowerCase());
-
-        const cardCanvases = document.querySelectorAll(".cardCanvas");
-        Object.values(dailyForecast).forEach((info, i) => {
-          animateCardWeather(cardCanvases[i], info.desc.toLowerCase());
-        });
-
-      } catch (err) { console.error(err); document.getElementById("result").innerHTML = `<p>⚠️ Error: ${err.message}</p>`; }
-    }
-
-    // Dynamic background based on weather
-    function setWeatherBackground(condition) {
-      let bg;
-      switch (condition) {
-        case "clear": bg = "linear-gradient(to right, #fceabb, #f8b500)"; break;
-        case "clouds": bg = "linear-gradient(to right, #d7d2cc, #304352)"; break;
-        case "rain":
-        case "drizzle": bg = "linear-gradient(to right, #4e54c8, #8f94fb)"; break;
-        case "thunderstorm": bg = "linear-gradient(to right, #000000, #434343)"; break;
-        case "snow": bg = "linear-gradient(to right, #83a4d4, #b6fbff)"; break;
-        default: bg = "linear-gradient(to right, #6dd5ed, #2193b0)";
-      }
-      document.body.style.background = bg;
-    }
-
-    function startWeatherEffect(condition) {
-      const canvas = document.getElementById("weatherCanvas");
-      const ctx = canvas.getContext("2d");
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      let particles = [];
-
-      function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (condition.includes("rain")) {
-          if (!particles.length) particles = Array.from({ length: maxRainParticles }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, len: Math.random() * 20 + 10, speed: Math.random() * 4 + 4 }));
-          ctx.strokeStyle = "rgba(0,0,255,0.6)";
-          ctx.lineWidth = 2;
-          particles.forEach(d => {
-            ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y + d.len); ctx.stroke();
-            d.y += d.speed; if (d.y > canvas.height) { d.y = -d.len; d.x = Math.random() * canvas.width; }
-          });
-        } else if (condition.includes("snow")) {
-          if (!particles.length) particles = Array.from({ length: maxSnowParticles }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 3 + 2, speed: Math.random() * 1 + 0.5 }));
-          ctx.fillStyle = "white";
-          particles.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill(); f.y += f.speed; if (f.y > canvas.height) { f.y = -f.radius; f.x = Math.random() * canvas.width; } });
+        // Backgrounds for different weather types
+        const backgrounds = {
+            Rain: 'linear-gradient(to right, #00c6fb, #005bea)',
+            Snow: 'linear-gradient(to right, #83a4d4, #b6fbff)',
+            Clouds: 'linear-gradient(to right, #bdc3c7, #2c3e50)',
+            Clear: 'linear-gradient(to right, #2980b9, #6dd5fa)'
         }
-        animationId = requestAnimationFrame(animate);
-      }
-      cancelAnimationFrame(animationId);
-      animate();
-    }
 
-    function animateCardWeather(canvas, condition) {
-      const ctx = canvas.getContext("2d");
-      canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
-      if (condition.includes("snow")) {
-        const flakes = Array.from({ length: 10 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 2 + 1, speed: Math.random() * 0.5 + 0.2 }));
-        function animate() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "white";
-          flakes.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill(); f.y += f.speed; if (f.y > canvas.height) { f.y = -f.radius; f.x = Math.random() * canvas.width; } });
-          requestAnimationFrame(animate);
+        // Autocomplete function
+        async function autocomplete(inp) {
+            const val = inp.value;
+            if (!val) { closeAllLists(); return; }
+            const list = document.getElementById("autocomplete-list");
+            list.innerHTML = "";
+            try {
+                const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${val}&limit=5&appid=${API_KEY}`);
+                const data = await res.json();
+                data.forEach(d => {
+                    const div = document.createElement("div");
+                    div.innerHTML = `${d.name}${d.state ? ', ' + d.state : ''}, ${d.country}`;
+                    div.addEventListener("click", () => { inp.value = d.name; closeAllLists(); });
+                    list.appendChild(div);
+                });
+            } catch (e) { console.error(e); }
         }
-        animate();
-      }
-    }
+        function closeAllLists() { document.getElementById("autocomplete-list").innerHTML = ""; }
 
-  </script>
+        document.getElementById("city").addEventListener("input", () => autocomplete(document.getElementById("city")));
+        document.addEventListener("click", (e) => { if (e.target !== document.getElementById("city")) closeAllLists(); });
+
+        // Get weather by city
+        document.getElementById("getWeather").addEventListener("click", () => {
+            const city = document.getElementById("city").value.trim();
+            if (!city) { alert("Enter a city"); return; }
+            getCoordinates(city);
+        });
+
+        // Get weather by location
+        document.getElementById("getLocation").addEventListener("click", () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => getWeather(pos.coords.latitude, pos.coords.longitude, "Your Location", "", ""),
+                    () => alert("Location denied"));
+            } else { alert("Geolocation not supported"); }
+        });
+
+        // Toggle dark mode
+        document.getElementById("toggleTheme").addEventListener("click", () => {
+            document.body.classList.toggle("dark");
+            document.getElementById("toggleTheme").textContent = document.body.classList.contains("dark") ? "☀️ Light Mode" : "🌙 Dark Mode";
+        });
+
+        // Get coordinates
+        async function getCoordinates(city) {
+            try {
+                document.getElementById("result").innerHTML = `<p>⏳ Fetching location...</p><canvas id="weatherCanvas"></canvas>`;
+                const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
+                const data = await res.json();
+                if (!data.length) { document.getElementById("result").innerHTML = `<p>❌ Location not found!</p>`; return; }
+                const { lat, lon, name, country, state } = data[0];
+                getWeather(lat, lon, name, country, state);
+            } catch (e) { console.error(e); document.getElementById("result").innerHTML = `<p>⚠️ Error fetching coordinates</p>`; }
+        }
+
+        // Get weather + forecast
+        async function getWeather(lat, lon, name, country, state) {
+            try {
+                document.getElementById("result").innerHTML = `<p>⏳ Fetching weather...</p><canvas id="weatherCanvas"></canvas>`;
+                const curRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+                const cur = await curRes.json();
+                const foreRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+                const fore = await foreRes.json();
+                if (cur.cod !== 200) { document.getElementById("result").innerHTML = `<p>❌ Error: ${cur.message}</p>`; return; }
+
+                // Hourly 24h forecast
+                const hourly = fore.list.slice(0, 8);
+                let hourlyHTML = "<h3>🕒 Hourly Forecast</h3><div class='forecast'>";
+                hourly.forEach(h => {
+                    const dt = new Date(h.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    hourlyHTML += `<div><p>${dt}</p><img src="https://openweathermap.org/img/wn/${h.weather[0].icon}.png" alt="${h.weather[0].description}"><p>🌡 ${h.main.temp}°C</p><p>${h.weather[0].description}</p></div>`;
+                });
+                hourlyHTML += "</div>";
+
+                // 7-day forecast approximation
+                let dailyData = {};
+                fore.list.forEach(item => {
+                    if (item.dt_txt.includes("12:00:00")) {
+                        const dt = new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+                        dailyData[dt] = { temp: item.main.temp, desc: item.weather[0].description, icon: item.weather[0].icon };
+                    }
+                });
+                let dailyHTML = "<h3>📅 7-Day Forecast</h3><div class='forecast'>";
+                Object.entries(dailyData).forEach(([dt, info]) => {
+                    dailyHTML += `<div><p><b>${dt}</b></p><img src="https://openweathermap.org/img/wn/${info.icon}.png" alt="${info.desc}"><p>🌡 ${info.temp}°C</p><p>${info.desc}</p></div>`;
+                });
+                dailyHTML += "</div>";
+
+                const curIcon = `https://openweathermap.org/img/wn/${cur.weather[0].icon}@2x.png`;
+                document.getElementById("result").innerHTML = `
+      <h2>${name}${state ? ", " + state : ""}${country ? ", " + country : ""}</h2>
+      <img src="${curIcon}" alt="${cur.weather[0].description}">
+      <p>🌡 Temperature: ${cur.main.temp}°C</p>
+      <p>🌥 Weather: ${cur.weather[0].description}</p>
+      <p>💧 Humidity: ${cur.main.humidity}%</p>
+      <p>💨 Wind Speed: ${cur.wind.speed} m/s</p>
+      ${hourlyHTML}
+      ${dailyHTML}
+      <canvas id="weatherCanvas"></canvas>
+    `;
+                document.body.style.backgroundImage = backgrounds[cur.weather[0].main] || backgrounds.Clear;
+                startWeatherEffect(cur.weather[0].main.toLowerCase());
+            } catch (e) { console.error(e); document.getElementById("result").innerHTML = `<p>⚠️ Error: ${e.message}</p>`; }
+        }
+
+        // Weather animation
+        function startWeatherEffect(condition) {
+            const canvas = document.getElementById("weatherCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            let particles = [];
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (condition.includes("rain")) {
+                    if (!particles.length) particles = Array.from({ length: 50 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, len: Math.random() * 20 + 10, speed: Math.random() * 4 + 4 }));
+                    ctx.strokeStyle = "rgba(0,0,255,0.6)"; ctx.lineWidth = 2;
+                    particles.forEach(d => { ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y + d.len); ctx.stroke(); d.y += d.speed; if (d.y > canvas.height) { d.y = -d.len; d.x = Math.random() * canvas.width; } });
+                } else if (condition.includes("snow")) {
+                    if (!particles.length) particles = Array.from({ length: 30 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 3 + 2, speed: Math.random() * 1 + 0.5 }));
+                    ctx.fillStyle = "white";
+                    particles.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill(); f.y += f.speed; if (f.y > canvas.height) { f.y = -f.radius; f.x = Math.random() * canvas.width; } });
+                }
+                animationId = requestAnimationFrame(animate);
+            }
+            cancelAnimationFrame(animationId);
+            animate();
+        }
+    </script>
 </body>
 
 </html>
