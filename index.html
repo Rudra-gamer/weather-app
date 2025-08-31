@@ -129,6 +129,23 @@
       width: 50px;
       height: 50px;
     }
+
+    #canvasWrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #weatherCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
   </style>
 </head>
 
@@ -145,6 +162,8 @@
   <div id="result">
     <canvas id="weatherCanvas"></canvas>
   </div>
+
+
 
   <script>
     const API_KEY = "eb11337bfca7017e9fa36f5eee4318d8";
@@ -306,4 +325,3 @@
 </body>
 
 </html>
-
