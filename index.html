@@ -144,148 +144,202 @@
         <canvas id="weatherCanvas"></canvas>
     </div>
 
-    <script>
-        const API_KEY = "eb11337bfca7017e9fa36f5eee4318d8";
-        let animationId;
+   <script>
+const API_KEY = "8163007a10544109b4a74602250610"; // Replace with your WeatherAPI.com key
+let animationId;
 
-        // Backgrounds for different weather types
-        const backgrounds = {
-            Rain: 'linear-gradient(to right, #00c6fb, #005bea)',
-            Snow: 'linear-gradient(to right, #83a4d4, #b6fbff)',
-            Clouds: 'linear-gradient(to right, #bdc3c7, #2c3e50)',
-            Clear: 'linear-gradient(to right, #2980b9, #6dd5fa)'
+// Backgrounds for different weather types
+const backgrounds = {
+    Rain: 'linear-gradient(to right, #00c6fb, #005bea)',
+    Snow: 'linear-gradient(to right, #83a4d4, #b6fbff)',
+    Clouds: 'linear-gradient(to right, #bdc3c7, #2c3e50)',
+    Clear: 'linear-gradient(to right, #2980b9, #6dd5fa)',
+    Mist: 'linear-gradient(to right, #606c88, #3f4c6b)'
+}
+
+// --- Autocomplete using WeatherAPI location search ---
+async function autocomplete(inp) {
+    const val = inp.value;
+    if (!val) { closeAllLists(); return; }
+
+    const list = document.getElementById("autocomplete-list");
+    list.innerHTML = "";
+
+    try {
+        const res = await fetch(`https://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${val}`);
+        const data = await res.json();
+        data.forEach(d => {
+            const div = document.createElement("div");
+            div.innerHTML = `${d.name}${d.region ? ', ' + d.region : ''}, ${d.country}`;
+            div.addEventListener("click", () => { 
+                inp.value = d.name; 
+                closeAllLists(); 
+            });
+            list.appendChild(div);
+        });
+    } catch (e) { console.error(e); }
+}
+
+function closeAllLists() {
+    document.getElementById("autocomplete-list").innerHTML = "";
+}
+
+document.getElementById("city").addEventListener("input", () => autocomplete(document.getElementById("city")));
+document.addEventListener("click", (e) => { if (e.target !== document.getElementById("city")) closeAllLists(); });
+
+// --- Dark Mode Toggle ---
+document.getElementById("toggleTheme").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+    document.getElementById("toggleTheme").textContent = document.body.classList.contains("dark") ? "☀️ Light Mode" : "🌙 Dark Mode";
+});
+
+// --- Get weather by city ---
+document.getElementById("getWeather").addEventListener("click", async () => {
+    const city = document.getElementById("city").value.trim();
+    if (!city) { alert("Enter a city or village"); return; }
+    await getWeatherByCity(city);
+});
+
+// --- Get weather by user location ---
+document.getElementById("getLocation").addEventListener("click", () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async pos => {
+            await getWeatherByCoords(pos.coords.latitude, pos.coords.longitude);
+        }, () => alert("Location denied"));
+    } else { alert("Geolocation not supported"); }
+});
+
+// --- Fetch weather using city name ---
+async function getWeatherByCity(city) {
+    try {
+        document.getElementById("result").innerHTML = `<p>⏳ Fetching weather...</p><canvas id="weatherCanvas"></canvas>`;
+        const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${city}&days=5&aqi=no&alerts=no`);
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById("result").innerHTML = `<p>❌ ${data.error.message}</p>`;
+            return;
         }
 
-        // Autocomplete function
-        async function autocomplete(inp) {
-            const val = inp.value;
-            if (!val) { closeAllLists(); return; }
-            const list = document.getElementById("autocomplete-list");
-            list.innerHTML = "";
-            try {
-                const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${val}&limit=5&appid=${API_KEY}`);
-                const data = await res.json();
-                data.forEach(d => {
-                    const div = document.createElement("div");
-                    div.innerHTML = `${d.name}${d.state ? ', ' + d.state : ''}, ${d.country}`;
-                    div.addEventListener("click", () => { inp.value = d.name; closeAllLists(); });
-                    list.appendChild(div);
-                });
-            } catch (e) { console.error(e); }
-        }
-        function closeAllLists() { document.getElementById("autocomplete-list").innerHTML = ""; }
+        renderWeather(data);
+    } catch (e) {
+        console.error(e);
+        document.getElementById("result").innerHTML = `<p>⚠️ Error fetching weather</p>`;
+    }
+}
 
-        document.getElementById("city").addEventListener("input", () => autocomplete(document.getElementById("city")));
-        document.addEventListener("click", (e) => { if (e.target !== document.getElementById("city")) closeAllLists(); });
+// --- Fetch weather using coordinates ---
+async function getWeatherByCoords(lat, lon) {
+    try {
+        document.getElementById("result").innerHTML = `<p>⏳ Fetching weather...</p><canvas id="weatherCanvas"></canvas>`;
+        const res = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&days=5&aqi=no&alerts=no`);
+        const data = await res.json();
 
-        // Get weather by city
-        document.getElementById("getWeather").addEventListener("click", () => {
-            const city = document.getElementById("city").value.trim();
-            if (!city) { alert("Enter a city"); return; }
-            getCoordinates(city);
-        });
-
-        // Get weather by location
-        document.getElementById("getLocation").addEventListener("click", () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(pos => getWeather(pos.coords.latitude, pos.coords.longitude, "Your Location", "", ""),
-                    () => alert("Location denied"));
-            } else { alert("Geolocation not supported"); }
-        });
-
-        // Toggle dark mode
-        document.getElementById("toggleTheme").addEventListener("click", () => {
-            document.body.classList.toggle("dark");
-            document.getElementById("toggleTheme").textContent = document.body.classList.contains("dark") ? "☀️ Light Mode" : "🌙 Dark Mode";
-        });
-
-        // Get coordinates
-        async function getCoordinates(city) {
-            try {
-                document.getElementById("result").innerHTML = `<p>⏳ Fetching location...</p><canvas id="weatherCanvas"></canvas>`;
-                const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
-                const data = await res.json();
-                if (!data.length) { document.getElementById("result").innerHTML = `<p>❌ Location not found!</p>`; return; }
-                const { lat, lon, name, country, state } = data[0];
-                getWeather(lat, lon, name, country, state);
-            } catch (e) { console.error(e); document.getElementById("result").innerHTML = `<p>⚠️ Error fetching coordinates</p>`; }
+        if (data.error) {
+            document.getElementById("result").innerHTML = `<p>❌ ${data.error.message}</p>`;
+            return;
         }
 
-        // Get weather + forecast
-        async function getWeather(lat, lon, name, country, state) {
-            try {
-                document.getElementById("result").innerHTML = `<p>⏳ Fetching weather...</p><canvas id="weatherCanvas"></canvas>`;
-                const curRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
-                const cur = await curRes.json();
-                const foreRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
-                const fore = await foreRes.json();
-                if (cur.cod !== 200) { document.getElementById("result").innerHTML = `<p>❌ Error: ${cur.message}</p>`; return; }
+        renderWeather(data);
+    } catch (e) {
+        console.error(e);
+        document.getElementById("result").innerHTML = `<p>⚠️ Error fetching weather</p>`;
+    }
+}
 
-                // Hourly 24h forecast
-                const hourly = fore.list.slice(0, 8);
-                let hourlyHTML = "<h3>🕒 Hourly Forecast</h3><div class='forecast'>";
-                hourly.forEach(h => {
-                    const dt = new Date(h.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    hourlyHTML += `<div><p>${dt}</p><img src="https://openweathermap.org/img/wn/${h.weather[0].icon}.png" alt="${h.weather[0].description}"><p>🌡 ${h.main.temp}°C</p><p>${h.weather[0].description}</p></div>`;
-                });
-                hourlyHTML += "</div>";
+// --- Render weather info ---
+function renderWeather(data) {
+    const cur = data.current;
+    const forecast = data.forecast.forecastday;
 
-                // 7-day forecast approximation
-                let dailyData = {};
-                fore.list.forEach(item => {
-                    if (item.dt_txt.includes("12:00:00")) {
-                        const dt = new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-                        dailyData[dt] = { temp: item.main.temp, desc: item.weather[0].description, icon: item.weather[0].icon };
-                    }
-                });
-                let dailyHTML = "<h3>📅 5-Day Forecast</h3><div class='forecast'>";
-                Object.entries(dailyData).forEach(([dt, info]) => {
-                    dailyHTML += `<div><p><b>${dt}</b></p><img src="https://openweathermap.org/img/wn/${info.icon}.png" alt="${info.desc}"><p>🌡 ${info.temp}°C</p><p>${info.desc}</p></div>`;
-                });
-                dailyHTML += "</div>";
-
-                const curIcon = `https://openweathermap.org/img/wn/${cur.weather[0].icon}@2x.png`;
-                document.getElementById("result").innerHTML = `
-      <h2>${name}${state ? ", " + state : ""}${country ? ", " + country : ""}</h2>
-      <img src="${curIcon}" alt="${cur.weather[0].description}">
-      <p>🌡 Temperature: ${cur.main.temp}°C</p>
-      <p>🌥 Weather: ${cur.weather[0].description}</p>
-      <p>💧 Humidity: ${cur.main.humidity}%</p>
-      <p>💨 Wind Speed: ${cur.wind.speed} m/s</p>
-      ${hourlyHTML}
-      ${dailyHTML}
-      <canvas id="weatherCanvas"></canvas>
+    // Current weather
+    const curIcon = `https:${cur.condition.icon}`;
+    let resultHTML = `
+        <h2>${data.location.name}${data.location.region ? ", " + data.location.region : ""}, ${data.location.country}</h2>
+        <img src="${curIcon}" alt="${cur.condition.text}">
+        <p>🌡 Temperature: ${cur.temp_c}°C</p>
+        <p>🌥 Weather: ${cur.condition.text}</p>
+        <p>💧 Humidity: ${cur.humidity}%</p>
+        <p>💨 Wind Speed: ${cur.wind_kph} km/h</p>
     `;
-                document.body.style.backgroundImage = backgrounds[cur.weather[0].main] || backgrounds.Clear;
-                startWeatherEffect(cur.weather[0].main.toLowerCase());
-            } catch (e) { console.error(e); document.getElementById("result").innerHTML = `<p>⚠️ Error: ${e.message}</p>`; }
+
+    // Hourly forecast (next 8 hours)
+    let hourlyHTML = "<h3>🕒 Hourly Forecast</h3><div class='forecast'>";
+    const nowHour = new Date().getHours();
+    forecast[0].hour.slice(nowHour, nowHour + 8).forEach(h => {
+        const dt = new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        hourlyHTML += `<div>
+            <p>${dt}</p>
+            <img src="https:${h.condition.icon}" alt="${h.condition.text}">
+            <p>🌡 ${h.temp_c}°C</p>
+            <p>${h.condition.text}</p>
+        </div>`;
+    });
+    hourlyHTML += "</div>";
+
+    // 5-day forecast
+    let dailyHTML = "<h3>📅 5-Day Forecast</h3><div class='forecast'>";
+    forecast.forEach(day => {
+        const dt = new Date(day.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+        dailyHTML += `<div>
+            <p><b>${dt}</b></p>
+            <img src="https:${day.day.condition.icon}" alt="${day.day.condition.text}">
+            <p>🌡 ${day.day.avgtemp_c}°C</p>
+            <p>${day.day.condition.text}</p>
+        </div>`;
+    });
+    dailyHTML += "</div>";
+
+    document.getElementById("result").innerHTML = `${resultHTML}${hourlyHTML}${dailyHTML}<canvas id="weatherCanvas"></canvas>`;
+    document.body.style.backgroundImage = backgrounds[cur.condition.text.split(' ')[0]] || backgrounds.Clear;
+    startWeatherEffect(cur.condition.text.toLowerCase());
+}
+
+// --- Canvas weather effect ---
+function startWeatherEffect(condition) {
+    const canvas = document.getElementById("weatherCanvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    let particles = [];
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (condition.includes("rain")) {
+            if (!particles.length) particles = Array.from({ length: 50 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, len: Math.random() * 20 + 10, speed: Math.random() * 4 + 4 }));
+            ctx.strokeStyle = "rgba(0,0,255,0.6)";
+            ctx.lineWidth = 2;
+            particles.forEach(d => {
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x, d.y + d.len);
+                ctx.stroke();
+                d.y += d.speed;
+                if (d.y > canvas.height) { d.y = -d.len; d.x = Math.random() * canvas.width; }
+            });
+        } else if (condition.includes("snow")) {
+            if (!particles.length) particles = Array.from({ length: 30 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 3 + 2, speed: Math.random() * 1 + 0.5 }));
+            ctx.fillStyle = "white";
+            particles.forEach(f => {
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.fill();
+                f.y += f.speed;
+                if (f.y > canvas.height) { f.y = -f.radius; f.x = Math.random() * canvas.width; }
+            });
         }
 
-        // Weather animation
-        function startWeatherEffect(condition) {
-            const canvas = document.getElementById("weatherCanvas");
-            const ctx = canvas.getContext("2d");
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            let particles = [];
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                if (condition.includes("rain")) {
-                    if (!particles.length) particles = Array.from({ length: 50 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, len: Math.random() * 20 + 10, speed: Math.random() * 4 + 4 }));
-                    ctx.strokeStyle = "rgba(0,0,255,0.6)"; ctx.lineWidth = 2;
-                    particles.forEach(d => { ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x, d.y + d.len); ctx.stroke(); d.y += d.speed; if (d.y > canvas.height) { d.y = -d.len; d.x = Math.random() * canvas.width; } });
-                } else if (condition.includes("snow")) {
-                    if (!particles.length) particles = Array.from({ length: 30 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 3 + 2, speed: Math.random() * 1 + 0.5 }));
-                    ctx.fillStyle = "white";
-                    particles.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2); ctx.fill(); f.y += f.speed; if (f.y > canvas.height) { f.y = -f.radius; f.x = Math.random() * canvas.width; } });
-                }
-                animationId = requestAnimationFrame(animate);
-            }
-            cancelAnimationFrame(animationId);
-            animate();
-        }
-    </script>
+        animationId = requestAnimationFrame(animate);
+    }
+
+    cancelAnimationFrame(animationId);
+    animate();
+}
+</script>
+
 </body>
 
 </html>
+
 
